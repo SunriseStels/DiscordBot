@@ -1,18 +1,14 @@
 import discord
-from discord.ext.commands import Bot
 from discord.ext import commands
-import asyncio
-import time
-import json
+import youtube_dl
+import safygiphy
+import requests
+import io
 import random
 
-with open('D:/PythonProjects/Tarkov/base.json', 'r', encoding='utf-8') as response:
-    source = response.read()
+songs = {"https://www.youtube.com/watch?v=N5rus7Dhpzs", "https://www.youtube.com/watch?v=XtsmIy1njjM"}
 
-data = json.loads(source)
-
-words = [":yum:",":relaxed:",":relieved:",":nerd:",":sunglasses:",":smirk:"]
-
+g = safygiphy.Giphy()
 Client = discord.Client()
 client = commands.Bot(command_prefix = "!")
 
@@ -20,16 +16,25 @@ client = commands.Bot(command_prefix = "!")
 async def on_ready():
     print(client.user.id)
     print(client.user.name)
-    print("Bot is ready!")
+    print('Bot is ready!')
 
 @client.event
 async def on_message(message):
-    if message.content.startswith('при') | message.content.startswith('При'):
-        userName = message.author.name
-        await client.send_message(message.channel, "Привет " + userName + " " + random.choice(words))
+    if message.content == '!music':
+        channel = message.author.voice.voice_channel
+        voice = await client.join_voice_channel(channel)
+        player = await voice.create_ytdl_player("https://www.youtube.com/watch?v=N5rus7Dhpzs")
+        player.start()
 
-    if message.content == ('!help'):
-        await client.send_message(message.channel, "```some test help text here```")
+    if message.content.startswith('!help'):
+        await client.send_message(message.channel, "```!gif название гифки - позволяет загурзить рандомную гиф в чат из сервиса Giphy```")
 
+    if message.content.startswith('!gif'):
+        gif_tag = message.content[5:]
+        rgif = g.random(tag=str(gif_tag))
+        response = requests.get(
+            str(rgif.get("data", {}).get('image_original_url')), stream=True
+        )
+        await client.send_file(message.channel, io.BytesIO(response.raw.read()), filename='video.gif')
 
 client.run("token")
